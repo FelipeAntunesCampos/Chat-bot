@@ -1,6 +1,6 @@
 // leitor de qr code
 const qrcode = require('qrcode-terminal');
-const { Client, Buttons, List, MessageMedia } = require('whatsapp-web.js'); // Mudança Buttons
+const { Client, Buttons, List, MessageMedia } = require('whatsapp-web.js');
 const client = new Client();
 // serviço de leitura do qr code
 client.on('qr', qr => {
@@ -18,48 +18,125 @@ const delay = ms => new Promise(res => setTimeout(res, ms)); // Função que usa
 // Funil
 
 client.on('message', async msg => {
+    // Garante que a mensagem é de um contato e não de um grupo, e que não é nula
+    if (!msg.from.endsWith('@c.us') || msg.body === null) {
+        return; 
+    }
 
-    if (msg.body.match(/(teste)/i) && msg.from.endsWith('@c.us')) {
-
+    // --- 1. FUNIL INICIAL (Mensagem 'teste') ---
+    if (msg.body.match(/(teste)/i)) {
         const chat = await msg.getChat();
 
         await delay(3000); //delay de 3 segundos
         await chat.sendStateTyping(); // Simulando Digitação
-        await delay(3000); //Delay de 3000 milisegundos mais conhecido como 3 segundos
-        const contact = await msg.getContact(); //Pegando o contato
-        const name = contact.pushname; //Pegando o nome do contato
-        await client.sendMessage(msg.from,'Olá! '+ name.split("  ")[0] + 'Sou o assistente virtual da empresa Atual Correspondente Bancario. Como posso ajudá-lo hoje? Por favor, digite uma das opções abaixo:\n\n1 - Como funciona\n2 - Valores dos planos\n3 - Benefícios\n4 - Como aderir\n5 - Outras perguntas'); //Primeira mensagem de texto
-        await delay(3000); //delay de 3 segundos
-        await chat.sendStateTyping(); // Simulando Digitação
-        await delay(5000); //Delay de 5 segundos
-    
+        await delay(3000); 
+
+        const contact = await msg.getContact(); 
+        // Correção: Removemos o split("  ") que pode causar problemas se o nome não tiver espaços duplos.
+        // Se a intenção é pegar apenas o primeiro nome, usamos split(" ")[0]
+        const name = contact.pushname.split(" ")[0]; 
         
+        await client.sendMessage(msg.from,
+            `Olá! ${name} Sou o assistente virtual da empresa Atual Correspondente Bancario. Como posso ajudá-lo hoje? Por favor, digite uma das opções abaixo:\n\n` + 
+            `1 - Financiamento Imobiliário 🏠\n` +
+            `2 - Empréstimo Consignado INSS 👵👴\n` +
+            `3 - Empréstimo Consignado Servidor Público 🧑‍💼\n` +
+            `4 - Cartão de Crédito Consignado 💳\n` +
+            `5 - Consórcio Imobiliário Caixa 🏘️\n` +
+            `6 - Consórcio de Veículos Caixa 🚗`
+        );
+        
+        await delay(3000); 
+        await chat.sendStateTyping(); 
+        await delay(5000); 
+        
+        // Colocamos um 'return' aqui para evitar que o código continue e cheque as opções, 
+        // já que o usuário acabou de iniciar o funil e ainda não escolheu uma opção.
+        return;
     }
 
-
-
-
-    if (msg.body !== null && msg.body === '1' && msg.from.endsWith('@c.us')) {
+    // --- 2. RESPOSTA À OPÇÃO '1' (Financiamento Imobiliário) ---
+    // A condição foi simplificada para `msg.body === '1'`.
+    if (msg.body === '1') {
         const chat = await msg.getChat();
 
-
-        await delay(3000); //delay de 3 segundos
-        await chat.sendStateTyping(); // Simulando Digitação
         await delay(3000);
-        await client.sendMessage(msg.from, 'Nosso serviço oferece consultas médicas 24 horas por dia, 7 dias por semana, diretamente pelo WhatsApp.\n\nNão há carência, o que significa que você pode começar a usar nossos serviços imediatamente após a adesão.\n\nOferecemos atendimento médico ilimitado, receitas\n\nAlém disso, temos uma ampla gama de benefícios, incluindo acesso a cursos gratuitos');
+        await chat.sendStateTyping();
+        await delay(3000); 
+        
+        // Mensagem da sub-opção Financiamento Imobiliário
+        await client.sendMessage(msg.from,
+            `🏠 Financiamento Imobiliário Caixa Escolha o tipo de financiamento que você deseja:\n\n` +
+            `1.1 - Financiamento de Terreno 🏞️\n` +
+            `1.2 - Financiamento para Construção 🏗️\n` +
+            `1.3 - Financiamento de Terreno + Construção 🧱\n` +
+            `1.4 - Financiamento de Imóvel Pronto – Usado 🏡\n` +
+            `1.5 - Financiamento de Imóvel Pronto – Novo 🏠✨\n` +
+            `1.6 - Refinanciamento de Imóvel Próprio 🔄`
+        );
+        
+        await delay(3000); 
+        await chat.sendStateTyping();
+        await delay(5000);
 
-        await delay(3000); //delay de 3 segundos
-        await chat.sendStateTyping(); // Simulando Digitação
-        await delay(3000);
-        await client.sendMessage(msg.from, 'COMO FUNCIONA?\nÉ muito simples.\n\n1º Passo\nFaça seu cadastro e escolha o plano que desejar.\n\n2º Passo\nApós efetuar o pagamento do plano escolhido você já terá acesso a nossa área exclusiva para começar seu atendimento na mesma hora.\n\n3º Passo\nSempre que precisar');
+        // ATENÇÃO: Se você queria que a próxima mensagem (pedindo dados do CPF/renda)
+        // fosse enviada *após* a escolha da sub-opção 1.1, você precisa tirá-la daqui
+        // e criar um novo `if` fora deste, verificando a escolha '1.1'.
+        
+        // A lógica do seu código ORIGINAL estava ERRADA:
+        /*
+        if (msg.body !== null && msg.body === '1' && msg.from.endsWith('@c.us')) {
+            // ... (Aqui dentro ele repetia a verificação do '1')
+        }
+        */
+        // Isso causava a repetição de lógica e não fazia sentido, pois o msg.body já era '1'.
+        // Se a intenção era já enviar a mensagem de simulação, o bloco de código a seguir está correto.
+        // Se a intenção era esperar uma nova resposta, VEJA O PRÓXIMO PONTO.
 
-        await delay(3000); //delay de 3 segundos
-        await chat.sendStateTyping(); // Simulando Digitação
-        await delay(3000);
-        await client.sendMessage(msg.from, 'Link para cadastro: https://site.com');
-
-
+        return; 
     }
+
+    // --- 3. RESPOSTA À SUB-OPÇÃO '1.1' (Simulação de Financiamento de Terreno) ---
+    // Você precisa de uma nova condição `if` fora da anterior para capturar a próxima resposta.
+    // **NOTA:** Como a opção acima apenas mostra o menu 1.1 a 1.6, 
+    // a verificação `msg.body === '1'` não deve prosseguir para a simulação.
+    // A simulação deve ser um *novo if* que verifica a resposta do usuário, como '1.1'.
+    
+    // Supondo que o usuário digite '1.1' após o menu de financiamento:
+    if (msg.body === '1.1') {
+        const chat = await msg.getChat();
+        
+        await delay(3000); 
+        await chat.sendStateTyping(); 
+        await delay(3000);
+        
+        await client.sendMessage(msg.from, 
+            `📄 Para fazermos sua simulação de financiamento Caixa, precisamos das seguintes informações:\n\n` +
+            `🔹 CPF: \n` +
+            `🔹 Data de nascimento: \n\n` +
+            `🔹 Renda bruta mensal: \n\n` +
+            `🔹 Cidade do imóvel: \n\n` +
+            `🔹 Valor do imóvel: \n\n` +
+            `🔹 Valor desejado de financiamento: \n\n` +
+            `🔹 Vai utilizar FGTS? (Sim/Não)`
+        );
+
+        await delay(3000); 
+        await chat.sendStateTyping(); 
+        await delay(3000);
+        
+        await client.sendMessage(msg.from, 
+            `💡 Importante:\n` +
+            `• Pelo sistema SAC, o financiamento pode chegar até 80% do valor do imóvel.\n\n` +
+            `• Pelo sistema Price, o limite é de até 70%.\n\n` +
+            `• Caso utilize o FGTS, é necessário se enquadrar nas regras da Caixa (imóvel residencial, não possuir outro imóvel na cidade, entre outros critérios).\n\n` +
+            `📲 Assim que recebermos seus dados, retornaremos com a simulação personalizada!`
+        );
+        
+        return;
+    }
+});
+    
 
     if (msg.body !== null && msg.body === '2' && msg.from.endsWith('@c.us')) {
         const chat = await msg.getChat();
