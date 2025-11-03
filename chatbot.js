@@ -2,21 +2,22 @@
 const qrcode = require('qrcode-terminal');
 const { Client, Buttons, List, MessageMedia } = require('whatsapp-web.js');
 const client = new Client();
+
 // serviço de leitura do qr code
 client.on('qr', qr => {
     qrcode.generate(qr, {small: true});
 });
+
 // apos isso ele diz que foi tudo certo
 client.on('ready', () => {
     console.log('Tudo certo! WhatsApp conectado.');
 });
-// E inicializa tudo 
-client.initialize();
 
-const delay = ms => new Promise(res => setTimeout(res, ms)); // Função que usamos para criar o delay entre uma ação e outra
+// Função que usamos para criar o delay entre uma ação e outra
+const delay = ms => new Promise(res => setTimeout(res, ms)); 
 
-// Funil
-
+// --- PONTO MAIS IMPORTANTE: ONDE FICA O FUNIL ---
+// Todos os "if" de mensagem devem ficar DENTRO desta função
 client.on('message', async msg => {
     // Garante que a mensagem é de um contato e não de um grupo, e que não é nula
     if (!msg.from.endsWith('@c.us') || msg.body === null) {
@@ -32,8 +33,6 @@ client.on('message', async msg => {
         await delay(3000); 
 
         const contact = await msg.getContact(); 
-        // Correção: Removemos o split("  ") que pode causar problemas se o nome não tiver espaços duplos.
-        // Se a intenção é pegar apenas o primeiro nome, usamos split(" ")[0]
         const name = contact.pushname.split(" ")[0]; 
         
         await client.sendMessage(msg.from,
@@ -50,13 +49,10 @@ client.on('message', async msg => {
         await chat.sendStateTyping(); 
         await delay(5000); 
         
-        // Colocamos um 'return' aqui para evitar que o código continue e cheque as opções, 
-        // já que o usuário acabou de iniciar o funil e ainda não escolheu uma opção.
         return;
     }
 
     // --- 2. RESPOSTA À OPÇÃO '1' (Financiamento Imobiliário) ---
-    // A condição foi simplificada para `msg.body === '1'`.
     if (msg.body === '1') {
         const chat = await msg.getChat();
 
@@ -78,32 +74,12 @@ client.on('message', async msg => {
         await delay(3000); 
         await chat.sendStateTyping();
         await delay(5000);
-
-        // ATENÇÃO: Se você queria que a próxima mensagem (pedindo dados do CPF/renda)
-        // fosse enviada *após* a escolha da sub-opção 1.1, você precisa tirá-la daqui
-        // e criar um novo `if` fora deste, verificando a escolha '1.1'.
         
-        // A lógica do seu código ORIGINAL estava ERRADA:
-        /*
-        if (msg.body !== null && msg.body === '1' && msg.from.endsWith('@c.us')) {
-            // ... (Aqui dentro ele repetia a verificação do '1')
-        }
-        */
-        // Isso causava a repetição de lógica e não fazia sentido, pois o msg.body já era '1'.
-        // Se a intenção era já enviar a mensagem de simulação, o bloco de código a seguir está correto.
-        // Se a intenção era esperar uma nova resposta, VEJA O PRÓXIMO PONTO.
-
         return; 
     }
 
     // --- 3. RESPOSTA À SUB-OPÇÃO '1.1' (Simulação de Financiamento de Terreno) ---
-    // Você precisa de uma nova condição `if` fora da anterior para capturar a próxima resposta.
-    // **NOTA:** Como a opção acima apenas mostra o menu 1.1 a 1.6, 
-    // a verificação `msg.body === '1'` não deve prosseguir para a simulação.
-    // A simulação deve ser um *novo if* que verifica a resposta do usuário, como '1.1'.
-    
-    // Supondo que o usuário digite '1.1' após o menu de financiamento:
-    if (msg.body === '1.1') {
+    if (msg.body === '1') {
         const chat = await msg.getChat();
         
         await delay(3000); 
@@ -135,67 +111,86 @@ client.on('message', async msg => {
         
         return;
     }
-});
-    
 
-    if (msg.body !== null && msg.body === '2' && msg.from.endsWith('@c.us')) {
+    // --- 4. OPÇÕES 2, 3, 4, 5 (QUE ESTAVAM FORA DO LUGAR) ---
+    
+    // **NOTA IMPORTANTE:** O texto abaixo (Plano Individual, Sorteio) não corresponde
+    // ao menu que você enviou (Empréstimo INSS, etc.).
+    // Você precisa atualizar o texto destas respostas.
+
+    if (msg.body === '2') {
         const chat = await msg.getChat();
 
-
-        await delay(3000); //Delay de 3000 milisegundos mais conhecido como 3 segundos
-        await chat.sendStateTyping(); // Simulando Digitação
         await delay(3000);
+        await chat.sendStateTyping(); 
+        await delay(3000);
+        // ATENÇÃO: Este texto é sobre "Planos". O seu menu dizia "Empréstimo INSS".
         await client.sendMessage(msg.from, '*Plano Individual:* R$22,50 por mês.\n\n*Plano Família:* R$39,90 por mês, inclui você mais 3 dependentes.\n\n*Plano TOP Individual:* R$42,50 por mês, com benefícios adicionais como\n\n*Plano TOP Família:* R$79,90 por mês, inclui você mais 3 dependentes');
 
-        await delay(3000); //delay de 3 segundos
-        await chat.sendStateTyping(); // Simulando Digitação
+        await delay(3000);
+        await chat.sendStateTyping(); 
         await delay(3000);
         await client.sendMessage(msg.from, 'Link para cadastro: https://site.com');
+        return; // Adicionado return
     }
 
-    if (msg.body !== null && msg.body === '3' && msg.from.endsWith('@c.us')) {
+    if (msg.body === '3') {
         const chat = await msg.getChat();
 
-
-        await delay(3000); //Delay de 3000 milisegundos mais conhecido como 3 segundos
-        await chat.sendStateTyping(); // Simulando Digitação
         await delay(3000);
+        await chat.sendStateTyping(); 
+        await delay(3000);
+        // ATENÇÃO: Este texto é sobre "Sorteio". O seu menu dizia "Empréstimo Servidor Público".
         await client.sendMessage(msg.from, 'Sorteio de em prêmios todo ano.\n\nAtendimento médico ilimitado 24h por dia.\n\nReceitas de medicamentos');
         
-        await delay(3000); //delay de 3 segundos
-        await chat.sendStateTyping(); // Simulando Digitação
+        await delay(3000);
+        await chat.sendStateTyping(); 
         await delay(3000);
         await client.sendMessage(msg.from, 'Link para cadastro: https://site.com');
-
+        return; // Adicionado return
     }
 
-    if (msg.body !== null && msg.body === '4' && msg.from.endsWith('@c.us')) {
+    if (msg.body === '4') {
         const chat = await msg.getChat();
 
-        await delay(3000); //Delay de 3000 milisegundos mais conhecido como 3 segundos
-        await chat.sendStateTyping(); // Simulando Digitação
         await delay(3000);
+        await chat.sendStateTyping(); 
+        await delay(3000);
+        // ATENÇÃO: Este texto é sobre "Aderir planos". O seu menu dizia "Cartão Consignado".
         await client.sendMessage(msg.from, 'Você pode aderir aos nossos planos diretamente pelo nosso site ou pelo WhatsApp.\n\nApós a adesão, você terá acesso imediato');
 
-
-        await delay(3000); //delay de 3 segundos
-        await chat.sendStateTyping(); // Simulando Digitação
+        await delay(3000);
+        await chat.sendStateTyping(); 
         await delay(3000);
         await client.sendMessage(msg.from, 'Link para cadastro: https://site.com');
-
-
+        return; // Adicionado return
     }
 
-    if (msg.body !== null && msg.body === '5' && msg.from.endsWith('@c.us')) {
+    if (msg.body === '5') {
         const chat = await msg.getChat();
 
-        await delay(3000); //Delay de 3000 milisegundos mais conhecido como 3 segundos
-        await chat.sendStateTyping(); // Simulando Digitação
+        await delay(3000);
+        await chat.sendStateTyping(); 
+        await delay(3000);
+        // ATENÇÃO: Este texto parece genérico. O seu menu dizia "Consórcio Imobiliário".
+        await client.sendMessage(msg.from, 'Se você tiver outras dúvidas ou precisar de mais informações, por favor, fale aqui nesse whatsapp ou visite nosso site: https://site.com ');
+        
+        // As linhas abaixo estavam sobrando no seu código original e foram movidas para dentro do 'if'
         await delay(3000);
         await client.sendMessage(msg.from, 'Se você tiver outras dúvidas ou precisar de mais informações, por favor, fale aqui nesse whatsapp ou visite nosso site: https://site.com ');
-
-
+        return; // Adicionado return
     }
 
+}); // <-- FIM DO client.on('message', ...)
 
-});
+
+// --- CORREÇÃO PRINCIPAL: INICIALIZAÇÃO DO CLIENTE ---
+// Criamos uma função async para "embrulhar" o await
+async function start() {
+    console.log("Iniciando o cliente...");
+    // Agora o await está dentro de uma função async, o que é permitido
+    await client.initialize();
+}
+
+// Chamamos a função para iniciar tudo
+start();
